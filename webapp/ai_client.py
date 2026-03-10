@@ -1,7 +1,9 @@
 """Anthropic and FAL.ai API clients using direct HTTP requests."""
+import io
 import json
 import os
 import requests
+import zipfile
 
 
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
@@ -190,10 +192,33 @@ STYLE_PROMPTS = {
 }
 
 
-def fal_submit_training(image_urls: list) -> str:
-    """Submit a LoRA training job to FAL.ai and return request_id."""
+def fal_create_zip(image_files: list) -> bytes:
+    """
+    Create an in-memory ZIP archive from a list of (filename, bytes) tuples.
+    FAL.ai flux-lora-fast-training requires all training images in a single ZIP.
+    """
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+        for filename, data in image_files:
+            zf.writestr(filename, data)
+    return buf.getvalue()
+
+
+def fal_submit_training(image_files: list) -> str:
+    """
+    Submit a LoRA training job to FAL.ai and return request_id.
+
+    Args:
+        image_files: list of (filename, bytes) tuples — the training photos.
+                     All images are bundled into a ZIP and uploaded to FAL storage
+                     before submitting the training job.
+    """
     if not FAL_KEY:
         raise ValueError("FAL_KEY is not set")
+
+    # Pack all images into a ZIP and upload it
+    zip_bytes = fal_create_zip(image_files)
+    zip_url = fal_upload_file(zip_bytes, "training_images.zip", "application/zip")
 
     headers = {
         "Authorization": f"Key {FAL_KEY}",
@@ -201,7 +226,7 @@ def fal_submit_training(image_urls: list) -> str:
     }
 
     body = {
-        "images_data_url": image_urls[0],
+        "images_data_url": zip_url,
         "steps": 1000,
         "rank": 16,
         "learning_rate": 0.0004,

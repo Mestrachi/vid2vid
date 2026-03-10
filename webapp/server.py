@@ -521,24 +521,15 @@ class Handler(BaseHTTPRequestHandler):
         user_upload_dir = UPLOAD_DIR / user["id"]
         user_upload_dir.mkdir(exist_ok=True)
 
-        saved_paths = []
-        fal_urls = []
+        # Collect (filename, bytes) for ZIP packaging
+        image_files = []
 
         for photo in photos:
             safe_name = re.sub(r"[^a-zA-Z0-9._-]", "_", photo.filename or "photo.jpg")
             dest = user_upload_dir / f"{uuid.uuid4().hex}_{safe_name}"
             file_bytes = photo.read()
             dest.write_bytes(file_bytes)
-            saved_paths.append(str(dest))
-
-            # Upload to FAL storage
-            try:
-                fal_url = ai_client.fal_upload_file(
-                    file_bytes, safe_name, photo.type or "image/jpeg"
-                )
-                fal_urls.append(fal_url)
-            except Exception as e:
-                print(f"FAL upload warning: {e}")
+            image_files.append((safe_name, file_bytes))
 
         # Create DB session
         session_id = str(uuid.uuid4())
@@ -550,11 +541,11 @@ class Handler(BaseHTTPRequestHandler):
                 (session_id, user["id"], "training", json.dumps(styles), len(photos)),
             )
 
-        # Start FAL training (async)
+        # Start FAL training (async) — uploads a ZIP of all images, then submits
         request_id = None
-        if fal_urls and os.getenv("FAL_KEY"):
+        if image_files and os.getenv("FAL_KEY"):
             try:
-                request_id = ai_client.fal_submit_training(fal_urls)
+                request_id = ai_client.fal_submit_training(image_files)
                 with db() as conn:
                     conn.execute(
                         "UPDATE photo_sessions SET fal_request_id = ? WHERE id = ?",
