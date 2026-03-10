@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+{% block title %}GlowUp AI — Dating Profile Makeover{% endblock %}
+{% block body %}
+
+<!-- Nav -->
+<nav class="landing-nav">
+  <a href="/" class="logo">
+    <div class="logo-icon">✨</div>
+    <span>GlowUp AI</span>
+  </a>
+  <div class="nav-actions">
+    {% if user %}
+      <a href="/dashboard" class="btn-primary">Go to Dashboard</a>
+    {% else %}
+      <a href="/login" class="btn-ghost">Sign in</a>
+      <a href="/register" class="btn-primary">Start Free</a>
+    {% endif %}
+  </div>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+  <div class="hero-inner">
+    <div class="hero-badge">⚡ AI-powered dating profile makeover</div>
+    <h1 class="hero-title">
+      Get <span class="gradient-text">10x more matches</span><br>starting today
+    </h1>
+    <p class="hero-subtitle">
+      Upload a few selfies and our AI generates stunning, realistic dating profile photos —
+      professional portraits, travel shots, lifestyle pics and more. No photography skills needed.
+    </p>
+    <div class="hero-actions">
+      <a href="/register" class="btn-primary btn-lg">Transform my profile →</a>
+      <a href="#features" class="btn-secondary btn-lg">See how it works</a>
+    </div>
+    <div class="hero-trust">
+      <span>✅ No credit card required</span>
+      <span>🔒 Your photos stay private</span>
+      <span>⚡ Results in minutes</span>
+    </div>
+  </div>
+</section>
+
+<!-- Features -->
+<section id="features" class="section">
+  <div class="container">
+    <div class="section-header">
+      <h2>Everything you need to win at dating apps</h2>
+      <p>Four powerful AI tools, one simple dashboard.</p>
+    </div>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon pink">📸</div>
+        <h3>AI Photo Generator</h3>
+        <p>Upload 5-10 selfies and get stunning, realistic dating profile photos. Professional portraits, travel shots, lifestyle pics and more.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon purple">✨</div>
+        <h3>Bio Improvement Tool</h3>
+        <p>Paste your dating bio and get an AI-powered makeover. Better wording, higher attractiveness score, and tips to get more matches.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon yellow">⭐</div>
+        <h3>Photo Ranking</h3>
+        <p>Upload your current photos and let AI rank them. Know exactly which photo should be first and which styles you're missing.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon blue">💬</div>
+        <h3>AI Messaging Assistant</h3>
+        <p>Never get ghosted again. Get smart, flirty, and authentic replies for any dating app conversation.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Steps -->
+<section class="section bg-light">
+  <div class="container">
+    <div class="section-header">
+      <h2>Up and running in 4 steps</h2>
+    </div>
+    <div class="steps-grid">
+      <div class="step">
+        <div class="step-number">01</div>
+        <h3>Sign up free</h3>
+        <p>Create your account in 30 seconds</p>
+      </div>
+      <div class="step">
+        <div class="step-number">02</div>
+        <h3>Upload your photos</h3>
+        <p>5-10 face photos is all we need</p>
+      </div>
+      <div class="step">
+        <div class="step-number">03</div>
+        <h3>AI does the magic</h3>
+        <p>Get stunning profile photos in minutes</p>
+      </div>
+      <div class="step">
+        <div class="step-number">04</div>
+        <h3>Get more matches</h3>
+        <p>Use your new profile and watch the magic happen</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Testimonials -->
+<section class="section">
+  <div class="container">
+    <div class="section-header">
+      <h2>Real people, real results</h2>
+    </div>
+    <div class="testimonials-grid">
+      <div class="testimonial">
+        <div class="stars">★★★★★</div>
+        <p>"I went from 2 matches a week to 20+. The AI photos look so natural, nobody believes they're AI generated."</p>
+        <div class="testimonial-author">
+          <strong>Marcus, 28</strong>
+          <span class="badge pink">Tinder</span>
+        </div>
+      </div>
+      <div class="testimonial">
+        <div class="stars">★★★★★</div>
+        <p>"The bio analyzer gave me a completely new perspective. My attractiveness score went from 4/10 to 8/10!"</p>
+        <div class="testimonial-author">
+          <strong>Sophie, 25</strong>
+          <span class="badge pink">Hinge</span>
+        </div>
+      </div>
+      <div class="testimonial">
+        <div class="stars">★★★★★</div>
+        <p>"The messaging assistant saved so many conversations I would have fumbled. Absolute game changer."</p>
+        <div class="testimonial-author">
+          <strong>James, 31</strong>
+          <span class="badge pink">Bumble</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+  <div class="container">
+    <h2>Ready to transform your dating life?</h2>
+    <p>Join thousands of people who upgraded their profiles with GlowUp AI.</p>
+    <a href="/register" class="btn-white btn-lg">Get started for free →</a>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer class="footer">
+  <div class="container footer-inner">
+    <div class="logo">
+      <div class="logo-icon">✨</div>
+      <span>GlowUp AI</span>
+    </div>
+    <p>© 2025 GlowUp AI. Your photos are private and secure.</p>
+  </div>
+</footer>
+
+{% endblock %}

@@ -1,0 +1,172 @@
+{% extends "dashboard_base.html" %}
+{% block title %}Bio Improvement — GlowUp AI{% endblock %}
+{% block content %}
+<div class="page-content">
+  <div class="page-header">
+    <div class="page-tag purple">✨ Bio Analyzer</div>
+    <h1>Profile Bio Improvement</h1>
+    <p>Paste your current dating bio and our AI will score it, rewrite it, and give you expert tips.</p>
+  </div>
+
+  <div class="card">
+    <div class="field-header">
+      <label class="field-label">Your current bio</label>
+      <span id="bio-count" class="field-hint">0 characters</span>
+    </div>
+    <textarea id="bio-input" class="textarea" rows="6"
+      placeholder="Paste your current dating profile bio here..."></textarea>
+
+    <div class="example-btns">
+      <span class="example-label">Try an example:</span>
+      <button class="btn-example" onclick="setBio(0)">Example 1</button>
+      <button class="btn-example" onclick="setBio(1)">Example 2</button>
+    </div>
+
+    <button id="analyze-btn" class="btn-primary btn-full" onclick="analyzeBio()">
+      ✨ Analyze &amp; improve my bio
+    </button>
+  </div>
+
+  <div id="results" class="hidden">
+    <!-- Score -->
+    <div class="card">
+      <div class="score-header">
+        <h2>Attractiveness Score</h2>
+        <div id="score-value" class="score-number"></div>
+      </div>
+      <div class="score-bar-bg">
+        <div id="score-bar" class="score-bar"></div>
+      </div>
+      <p id="score-explanation" class="score-explanation"></p>
+    </div>
+
+    <!-- Improved Bio -->
+    <div class="card card-purple">
+      <div class="card-header-row">
+        <div class="flex-row gap-sm">
+          <span>✨</span>
+          <h2>AI-Improved Bio</h2>
+        </div>
+        <button class="btn-copy" onclick="copyText('improved-bio')">Copy</button>
+      </div>
+      <div id="improved-bio" class="bio-display"></div>
+    </div>
+
+    <!-- Strengths & Improvements -->
+    <div class="two-col-grid">
+      <div class="card">
+        <h3>✅ What's working</h3>
+        <ul id="strengths-list" class="check-list green"></ul>
+      </div>
+      <div class="card">
+        <h3>⚠️ What to improve</h3>
+        <ul id="improvements-list" class="check-list orange"></ul>
+      </div>
+    </div>
+
+    <!-- Tips -->
+    <div class="card">
+      <h3>Expert tips to get more matches</h3>
+      <ol id="tips-list" class="numbered-list"></ol>
+    </div>
+
+    <!-- Conversation Starters -->
+    <div class="card">
+      <h3>Conversation starters your profile could inspire</h3>
+      <div id="starters-list"></div>
+    </div>
+  </div>
+
+  <div id="loading" class="hidden loading-card">
+    <div class="spinner"></div>
+    <p>Analyzing your bio...</p>
+  </div>
+</div>
+
+<script>
+const examples = [
+  "I like hiking and coffee. Looking for someone chill to hang out with. I'm pretty easygoing.",
+  "Software engineer by day, foodie by night. Love traveling to new places and trying local cuisines. Fluent in sarcasm. Looking for someone to explore the city with."
+];
+
+function setBio(i) {
+  document.getElementById('bio-input').value = examples[i];
+  updateCount();
+}
+
+document.getElementById('bio-input').addEventListener('input', updateCount);
+
+function updateCount() {
+  const len = document.getElementById('bio-input').value.length;
+  document.getElementById('bio-count').textContent = len + ' characters';
+}
+
+async function analyzeBio() {
+  const bio = document.getElementById('bio-input').value.trim();
+  if (!bio) { alert('Please enter your bio first'); return; }
+  if (bio.length < 20) { alert('Bio is too short. Add more details.'); return; }
+
+  document.getElementById('loading').classList.remove('hidden');
+  document.getElementById('results').classList.add('hidden');
+  document.getElementById('analyze-btn').disabled = true;
+
+  try {
+    const res = await fetch('/api/profile/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ bio })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Analysis failed');
+    showResults(data.analysis);
+  } catch (e) {
+    alert('Error: ' + e.message);
+  } finally {
+    document.getElementById('loading').classList.add('hidden');
+    document.getElementById('analyze-btn').disabled = false;
+  }
+}
+
+function showResults(r) {
+  // Score
+  const scoreEl = document.getElementById('score-value');
+  scoreEl.textContent = r.score + '/10';
+  scoreEl.className = 'score-number ' + (r.score >= 8 ? 'green' : r.score >= 5 ? 'yellow' : 'red');
+
+  const bar = document.getElementById('score-bar');
+  bar.style.width = (r.score * 10) + '%';
+  bar.className = 'score-bar ' + (r.score >= 8 ? 'green' : r.score >= 5 ? 'yellow' : 'red');
+
+  document.getElementById('score-explanation').textContent = r.scoreExplanation;
+
+  // Improved bio
+  document.getElementById('improved-bio').textContent = r.improvedBio;
+
+  // Lists
+  document.getElementById('strengths-list').innerHTML = r.strengths.map(s =>
+    `<li>✅ ${escHtml(s)}</li>`).join('');
+  document.getElementById('improvements-list').innerHTML = r.improvements.map(s =>
+    `<li>⚠️ ${escHtml(s)}</li>`).join('');
+  document.getElementById('tips-list').innerHTML = r.tips.map((t, i) =>
+    `<li><span class="num">${i+1}</span>${escHtml(t)}</li>`).join('');
+
+  document.getElementById('starters-list').innerHTML = r.conversationStarters.map(s =>
+    `<div class="starter-row">
+      <p>"${escHtml(s)}"</p>
+      <button class="btn-copy-sm" onclick="navigator.clipboard.writeText(${JSON.stringify(s)});showToast('Copied!')">Copy</button>
+    </div>`).join('');
+
+  document.getElementById('results').classList.remove('hidden');
+}
+
+function copyText(id) {
+  const text = document.getElementById(id).textContent;
+  navigator.clipboard.writeText(text);
+  showToast('Copied!');
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+</script>
+{% endblock %}

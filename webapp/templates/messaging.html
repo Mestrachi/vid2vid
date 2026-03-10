@@ -1,0 +1,172 @@
+{% extends "dashboard_base.html" %}
+{% block title %}Messaging AI — GlowUp AI{% endblock %}
+{% block content %}
+<div class="page-content">
+  <div class="page-header">
+    <div class="page-tag blue">💬 Messaging AI</div>
+    <h1>AI Messaging Assistant</h1>
+    <p>Never get stuck on what to say. Get smart, natural, and flirty responses for any dating app situation.</p>
+  </div>
+
+  <div class="card">
+    <!-- Mode tabs -->
+    <div class="tabs">
+      <button id="tab-reply" class="tab active" onclick="setMode('reply')">Reply to a message</button>
+      <button id="tab-first" class="tab" onclick="setMode('first')">Send first message</button>
+    </div>
+
+    <!-- Context -->
+    <div class="form-group">
+      <label class="field-label">Context</label>
+      <select id="context-select" class="input-field">
+        <option>No context (general)</option>
+        <option>We matched 5 minutes ago</option>
+        <option>We've been talking for a few days</option>
+        <option>We have a date planned</option>
+        <option>The conversation went cold</option>
+      </select>
+    </div>
+
+    <!-- Input -->
+    <div class="form-group">
+      <label id="input-label" class="field-label">Paste the conversation</label>
+      <textarea id="convo-input" class="textarea" rows="7"
+        placeholder="Paste the message or conversation here..."></textarea>
+    </div>
+
+    <!-- Examples -->
+    <div class="example-btns">
+      <span class="example-label">Try an example:</span>
+      <button class="btn-example" onclick="setExample(0)">Example 1</button>
+      <button class="btn-example" onclick="setExample(1)">Example 2</button>
+      <button class="btn-example" onclick="setExample(2)">Example 3</button>
+    </div>
+
+    <button id="generate-btn" class="btn-primary btn-full" onclick="generateReplies()">
+      💬 Generate replies
+    </button>
+  </div>
+
+  <div id="loading" class="hidden loading-card">
+    <div class="spinner"></div>
+    <p>Generating smart replies...</p>
+  </div>
+
+  <div id="results" class="hidden">
+    <h2 id="results-title" class="section-title">Your smart replies</h2>
+    <div id="messages-list"></div>
+    <div id="extra-tips"></div>
+  </div>
+</div>
+
+<script>
+const replyExamples = [
+  `Them: "Hey! I saw you like hiking, what's your favorite trail?"`,
+  `Them: "You look really fun in your photos! What do you do for work?"`,
+  `Them: "So what are you looking for on here?"`,
+];
+const firstExamples = [
+  "I love hiking in the mountains, traveling to new places, and trying local restaurants. I'm a doctor who loves cooking on weekends.",
+  "Aspiring chef by day, amateur photographer by night. Always looking for the best hole-in-the-wall restaurants. Dog mom to a golden retriever named Biscuit.",
+  "Music producer and coffee snob. Ask me about my vinyl collection. Looking for someone who appreciates good conversation and adventures.",
+];
+
+let mode = 'reply';
+
+function setMode(m) {
+  mode = m;
+  document.getElementById('tab-reply').classList.toggle('active', m === 'reply');
+  document.getElementById('tab-first').classList.toggle('active', m === 'first');
+  document.getElementById('convo-input').value = '';
+  document.getElementById('results').classList.add('hidden');
+
+  if (m === 'reply') {
+    document.getElementById('input-label').textContent = 'Paste the conversation';
+    document.getElementById('convo-input').placeholder = 'Paste the message or conversation here...\n\nExample:\nThem: "Hey! I saw you like hiking, want to recommend me a trail?"';
+    document.getElementById('generate-btn').textContent = '💬 Generate replies';
+    document.getElementById('results-title').textContent = 'Your smart replies';
+  } else {
+    document.getElementById('input-label').textContent = 'Describe their profile';
+    document.getElementById('convo-input').placeholder = 'Describe their dating profile...\n\nExample:\n"She loves hiking, cooking, and her golden retriever. Works as a nurse."';
+    document.getElementById('generate-btn').textContent = '💬 Generate first messages';
+    document.getElementById('results-title').textContent = 'First message options';
+  }
+}
+
+function setExample(i) {
+  const examples = mode === 'reply' ? replyExamples : firstExamples;
+  document.getElementById('convo-input').value = examples[i] || '';
+}
+
+async function generateReplies() {
+  const conversation = document.getElementById('convo-input').value.trim();
+  const context = document.getElementById('context-select').value;
+
+  if (!conversation) {
+    alert(mode === 'reply' ? 'Please paste a conversation' : 'Please describe their profile');
+    return;
+  }
+
+  document.getElementById('loading').classList.remove('hidden');
+  document.getElementById('results').classList.add('hidden');
+  document.getElementById('generate-btn').disabled = true;
+
+  const endpoint = mode === 'reply' ? '/api/messaging' : '/api/messaging/first';
+
+  try {
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ conversation, context })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed');
+    showResults(data.result);
+  } catch (e) {
+    alert('Error: ' + e.message);
+  } finally {
+    document.getElementById('loading').classList.add('hidden');
+    document.getElementById('generate-btn').disabled = false;
+  }
+}
+
+const typeColors = {
+  playful: 'pink', genuine: 'blue', witty: 'purple',
+  question: 'green', observation: 'yellow'
+};
+
+function showResults(r) {
+  const messages = r.replies || r.messages || [];
+  const list = document.getElementById('messages-list');
+
+  list.innerHTML = messages.map(m => `
+    <div class="message-card">
+      <div class="message-header">
+        <span class="badge ${typeColors[m.type] || 'gray'}">${m.type}</span>
+        <button class="btn-copy-sm" onclick="navigator.clipboard.writeText(${JSON.stringify(m.message)});showToast('Copied!')">Copy</button>
+      </div>
+      <p class="message-text">"${escHtml(m.message)}"</p>
+      <p class="message-tip">💡 ${escHtml(m.explanation)}</p>
+    </div>
+  `).join('');
+
+  const extra = document.getElementById('extra-tips');
+  if (r.conversationTip) {
+    extra.innerHTML = `
+      <div class="card card-green"><strong>Keep the conversation going</strong><p>${escHtml(r.conversationTip)}</p></div>
+      <div class="card card-red"><strong>What NOT to say</strong><p>${escHtml(r.whatToAvoid || '')}</p></div>
+    `;
+  } else if (r.tip) {
+    extra.innerHTML = `<div class="card card-blue"><strong>Key tip for first messages</strong><p>${escHtml(r.tip)}</p></div>`;
+  } else {
+    extra.innerHTML = '';
+  }
+
+  document.getElementById('results').classList.remove('hidden');
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+</script>
+{% endblock %}

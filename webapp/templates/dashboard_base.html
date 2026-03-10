@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="app-layout">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <a href="/" class="logo">
+        <div class="logo-icon">✨</div>
+        <span>GlowUp AI</span>
+      </a>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a href="/dashboard" class="nav-item {% if page == 'home' %}active{% endif %}">
+        <span class="nav-icon">🏠</span> Dashboard
+      </a>
+      <a href="/dashboard/generate" class="nav-item {% if page == 'generate' %}active{% endif %}">
+        <span class="nav-icon">📸</span> AI Photo Generator
+      </a>
+      <a href="/dashboard/profile" class="nav-item {% if page == 'profile' %}active{% endif %}">
+        <span class="nav-icon">✨</span> Bio Improvement
+      </a>
+      <a href="/dashboard/ranking" class="nav-item {% if page == 'ranking' %}active{% endif %}">
+        <span class="nav-icon">⭐</span> Photo Ranking
+      </a>
+      <a href="/dashboard/messaging" class="nav-item {% if page == 'messaging' %}active{% endif %}">
+        <span class="nav-icon">💬</span> Messaging AI
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <div class="user-avatar">{{ user.name[0].upper() if user.name else 'U' }}</div>
+        <div>
+          <div class="user-name">{{ user.name }}</div>
+          <div class="user-email">{{ user.email }}</div>
+        </div>
+      </div>
+      <a href="/logout" class="logout-btn">Sign out</a>
+    </div>
+  </aside>
+
+  <!-- Main content -->
+  <main class="main-content">
+    {% block content %}{% endblock %}
+  </main>
+</div>
+{% endblock %}

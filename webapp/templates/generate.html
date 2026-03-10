@@ -1,0 +1,290 @@
+{% extends "dashboard_base.html" %}
+{% block title %}AI Photo Generator — GlowUp AI{% endblock %}
+{% block content %}
+<div class="page-content">
+  <div class="page-header">
+    <div class="page-tag pink">📸 Step 1 of 3</div>
+    <h1>AI Photo Generator</h1>
+    <p>Upload 5-10 clear photos of your face. Our AI will generate stunning, realistic dating profile photos.</p>
+  </div>
+
+  <!-- Tips -->
+  <div class="info-box blue">
+    <span class="info-icon">ℹ️</span>
+    <div>
+      <strong>Tips for best results:</strong> Use well-lit, clear face photos. Mix different angles (front, slight side).
+      Avoid sunglasses or heavy filters. More variety = better AI photos.
+    </div>
+  </div>
+
+  <div id="upload-section">
+    <!-- Upload -->
+    <div class="card">
+      <h2>Upload your photos <span class="required">(5-10 required)</span></h2>
+      <div id="drop-zone" class="drop-zone pink" onclick="document.getElementById('photo-input').click()"
+           ondragover="handleDragOver(event)" ondrop="handleDrop(event)">
+        <div class="drop-icon">⬆️</div>
+        <p>Click or drag photos here</p>
+        <p class="hint">JPG, PNG, WebP • Up to 10 photos • Max 10MB each</p>
+      </div>
+      <input type="file" id="photo-input" multiple accept="image/*" class="hidden" onchange="handleFiles(this.files)" />
+
+      <div id="preview-grid" class="photo-preview-grid"></div>
+      <p id="photo-count" class="photo-count">
+        0/10 photos uploaded
+        <span id="photo-status"></span>
+      </p>
+    </div>
+
+    <!-- Style selection -->
+    <div class="card">
+      <h2>Choose photo styles</h2>
+      <p class="muted">Select the types of profile photos you want generated</p>
+      <div id="style-list" class="style-list">
+        <label class="style-option" data-style="professional">
+          <input type="checkbox" name="style" value="professional" checked />
+          <span class="style-emoji">💼</span>
+          <div>
+            <p class="style-name">Professional Portrait</p>
+            <p class="style-desc">Clean, confident look for a polished first impression</p>
+          </div>
+          <div class="check-indicator"></div>
+        </label>
+        <label class="style-option" data-style="casual">
+          <input type="checkbox" name="style" value="casual" checked />
+          <span class="style-emoji">😊</span>
+          <div>
+            <p class="style-name">Casual Lifestyle</p>
+            <p class="style-desc">Natural, relaxed — the most attractive everyday look</p>
+          </div>
+          <div class="check-indicator"></div>
+        </label>
+        <label class="style-option" data-style="travel">
+          <input type="checkbox" name="style" value="travel" />
+          <span class="style-emoji">✈️</span>
+          <div>
+            <p class="style-name">Travel / Adventure</p>
+            <p class="style-desc">Shows you're fun and adventurous</p>
+          </div>
+          <div class="check-indicator"></div>
+        </label>
+        <label class="style-option" data-style="gym">
+          <input type="checkbox" name="style" value="gym" />
+          <span class="style-emoji">💪</span>
+          <div>
+            <p class="style-name">Gym / Fitness</p>
+            <p class="style-desc">Athletic and healthy vibe</p>
+          </div>
+          <div class="check-indicator"></div>
+        </label>
+        <label class="style-option" data-style="social">
+          <input type="checkbox" name="style" value="social" />
+          <span class="style-emoji">🎉</span>
+          <div>
+            <p class="style-name">Social Scene</p>
+            <p class="style-desc">Fun and outgoing — great for showing your social side</p>
+          </div>
+          <div class="check-indicator"></div>
+        </label>
+      </div>
+    </div>
+
+    <button id="generate-btn" class="btn-primary btn-full btn-lg" onclick="startGeneration()">
+      ✨ Generate my profile photos
+    </button>
+  </div>
+
+  <!-- Progress -->
+  <div id="progress-section" class="hidden card text-center py-xl">
+    <div class="spinner spinner-lg"></div>
+    <h2 id="progress-title">Uploading your photos securely...</h2>
+    <p id="progress-desc" class="muted"></p>
+  </div>
+
+  <!-- Results -->
+  <div id="results-section" class="hidden">
+    <div class="card">
+      <div class="flex-row gap-sm mb-md">
+        <span class="success-icon">✅</span>
+        <h2>Your photos are ready! 🎉</h2>
+      </div>
+      <div id="generated-grid" class="generated-grid"></div>
+      <div class="results-actions">
+        <button class="btn-secondary" onclick="resetForm()">Generate more</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Error -->
+  <div id="error-section" class="hidden card card-red">
+    <p id="error-msg"></p>
+    <button class="btn-secondary mt-md" onclick="resetToIdle()">Try again</button>
+  </div>
+</div>
+
+<script>
+const styleEmojis = { professional: '💼', casual: '😊', travel: '✈️', gym: '💪', social: '🎉' };
+const styleLabels = { professional: 'Professional', casual: 'Casual', travel: 'Travel', gym: 'Gym', social: 'Social' };
+
+let photoFiles = [];
+let pollingInterval = null;
+
+// Style checkboxes — update styling
+document.querySelectorAll('.style-option input[type=checkbox]').forEach(cb => {
+  updateStyleOption(cb);
+  cb.addEventListener('change', () => updateStyleOption(cb));
+});
+
+function updateStyleOption(cb) {
+  const label = cb.closest('.style-option');
+  label.classList.toggle('checked', cb.checked);
+}
+
+function handleDragOver(e) {
+  e.preventDefault();
+  document.getElementById('drop-zone').classList.add('drag-over');
+}
+
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('drop-zone').classList.remove('drag-over');
+  handleFiles(e.dataTransfer.files);
+}
+
+function handleFiles(files) {
+  const slots = 10 - photoFiles.length;
+  const newFiles = Array.from(files).slice(0, slots);
+  photoFiles = [...photoFiles, ...newFiles].slice(0, 10);
+  renderPreviews();
+}
+
+function renderPreviews() {
+  const grid = document.getElementById('preview-grid');
+  grid.innerHTML = '';
+
+  photoFiles.forEach((f, i) => {
+    const url = URL.createObjectURL(f);
+    const div = document.createElement('div');
+    div.className = 'preview-thumb';
+    div.innerHTML = `
+      <img src="${url}" alt="Photo ${i+1}" />
+      <button class="thumb-remove" onclick="removePhoto(${i})">×</button>
+    `;
+    grid.appendChild(div);
+  });
+
+  const countEl = document.getElementById('photo-count');
+  const statusEl = document.getElementById('photo-status');
+  countEl.innerHTML = photoFiles.length + '/10 photos uploaded ';
+
+  if (photoFiles.length === 0) {
+    statusEl.innerHTML = '';
+  } else if (photoFiles.length < 5) {
+    statusEl.innerHTML = `<span class="orange">• Upload at least ${5 - photoFiles.length} more</span>`;
+  } else {
+    statusEl.innerHTML = '<span class="green">✅ Ready!</span>';
+  }
+}
+
+function removePhoto(i) {
+  photoFiles.splice(i, 1);
+  renderPreviews();
+}
+
+async function startGeneration() {
+  if (photoFiles.length < 5) { alert('Please upload at least 5 photos for best results'); return; }
+
+  const styles = Array.from(document.querySelectorAll('input[name=style]:checked')).map(c => c.value);
+  if (styles.length === 0) { alert('Please select at least one photo style'); return; }
+
+  setStatus('uploading', 'Uploading your photos securely...', 'Please wait while we upload your photos.');
+
+  const formData = new FormData();
+  photoFiles.forEach(f => formData.append('photos', f));
+  styles.forEach(s => formData.append('styles', s));
+
+  try {
+    const res = await fetch('/api/generate/train', { method: 'POST', body: formData });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Upload failed');
+
+    setStatus('training', 'AI is learning your face...', 'This takes 10-15 minutes. You can close this tab and come back — we\'ll save your results.');
+    pollStatus(data.sessionId);
+  } catch (e) {
+    showError(e.message);
+  }
+}
+
+function pollStatus(sessionId) {
+  pollingInterval = setInterval(async () => {
+    try {
+      const res = await fetch('/api/generate/status/' + sessionId);
+      const data = await res.json();
+
+      if (data.status === 'generating') {
+        setStatus('generating', 'Generating your profile photos...', 'Almost there!');
+      } else if (data.status === 'completed') {
+        clearInterval(pollingInterval);
+        showResults(data.photos || []);
+      } else if (data.status === 'failed') {
+        clearInterval(pollingInterval);
+        showError(data.error || 'Generation failed');
+      }
+    } catch (e) {
+      console.error('Poll error:', e);
+    }
+  }, 10000);
+}
+
+function setStatus(state, title, desc) {
+  document.getElementById('upload-section').classList.add('hidden');
+  document.getElementById('progress-section').classList.remove('hidden');
+  document.getElementById('results-section').classList.add('hidden');
+  document.getElementById('error-section').classList.add('hidden');
+  document.getElementById('progress-title').textContent = title;
+  document.getElementById('progress-desc').textContent = desc;
+}
+
+function showResults(photos) {
+  document.getElementById('upload-section').classList.add('hidden');
+  document.getElementById('progress-section').classList.add('hidden');
+  document.getElementById('error-section').classList.add('hidden');
+  document.getElementById('results-section').classList.remove('hidden');
+
+  const grid = document.getElementById('generated-grid');
+  grid.innerHTML = photos.map(p => `
+    <div class="generated-item">
+      <div class="generated-img">
+        <img src="${p.url}" alt="${styleLabels[p.style] || p.style}" loading="lazy" />
+      </div>
+      <div class="generated-footer">
+        <span>${styleEmojis[p.style] || ''} ${styleLabels[p.style] || p.style}</span>
+        <a href="${p.url}" download="glowup-${p.style}.jpg" class="btn-download">⬇ Download</a>
+      </div>
+    </div>
+  `).join('');
+}
+
+function showError(msg) {
+  document.getElementById('upload-section').classList.add('hidden');
+  document.getElementById('progress-section').classList.add('hidden');
+  document.getElementById('results-section').classList.add('hidden');
+  document.getElementById('error-section').classList.remove('hidden');
+  document.getElementById('error-msg').textContent = msg;
+}
+
+function resetToIdle() {
+  document.getElementById('upload-section').classList.remove('hidden');
+  document.getElementById('error-section').classList.add('hidden');
+}
+
+function resetForm() {
+  photoFiles = [];
+  renderPreviews();
+  document.getElementById('upload-section').classList.remove('hidden');
+  document.getElementById('results-section').classList.add('hidden');
+  document.getElementById('progress-section').classList.add('hidden');
+  document.getElementById('error-section').classList.add('hidden');
+}
+</script>
+{% endblock %}

@@ -1,0 +1,110 @@
+{% extends "dashboard_base.html" %}
+{% block title %}Dashboard — GlowUp AI{% endblock %}
+{% block content %}
+<div class="page-content">
+  <div class="page-header">
+    <div class="page-tag">⚡ Ready to glow up</div>
+    <h1>Hey {{ user.name.split()[0] }}! 👋</h1>
+    <p>Pick a tool below to start transforming your dating profile.</p>
+  </div>
+
+  <!-- Quick start banner -->
+  <div class="quick-start-banner">
+    <div>
+      <h2>Start with the AI Photo Generator</h2>
+      <p>This is the fastest way to upgrade your profile. Upload 5-10 selfies and get 10 stunning photos.</p>
+    </div>
+    <a href="/dashboard/generate" class="btn-white">Get started →</a>
+  </div>
+
+  <!-- Tool cards -->
+  <div class="tools-grid">
+    <a href="/dashboard/generate" class="tool-card">
+      <div class="tool-icon pink">📸</div>
+      <div class="tool-body">
+        <div class="tool-header">
+          <h3>AI Photo Generator</h3>
+          <span class="badge pink">Most Popular</span>
+        </div>
+        <p>Upload 5-10 selfies and get stunning, realistic dating profile photos</p>
+        <div class="tool-steps">
+          <span>1. Upload photos</span>
+          <span>→</span>
+          <span>2. AI trains</span>
+          <span>→</span>
+          <span>3. Get results</span>
+        </div>
+      </div>
+      <span class="tool-arrow">›</span>
+    </a>
+
+    <a href="/dashboard/profile" class="tool-card">
+      <div class="tool-icon purple">✨</div>
+      <div class="tool-body">
+        <div class="tool-header">
+          <h3>Bio Improvement</h3>
+          <span class="badge purple">Quick & Easy</span>
+        </div>
+        <p>Paste your bio and get an AI-powered rewrite with attractiveness score</p>
+        <div class="tool-steps">
+          <span>1. Paste bio</span>
+          <span>→</span>
+          <span>2. AI analyzes</span>
+          <span>→</span>
+          <span>3. Get tips</span>
+        </div>
+      </div>
+      <span class="tool-arrow">›</span>
+    </a>
+
+    <a href="/dashboard/ranking" class="tool-card">
+      <div class="tool-icon yellow">⭐</div>
+      <div class="tool-body">
+        <div class="tool-header">
+          <h3>Photo Ranking</h3>
+          <span class="badge yellow">Instant Results</span>
+        </div>
+        <p>Upload your photos and learn which ones to use and which to cut</p>
+        <div class="tool-steps">
+          <span>1. Upload photos</span>
+          <span>→</span>
+          <span>2. AI ranks them</span>
+          <span>→</span>
+          <span>3. Know best photo</span>
+        </div>
+      </div>
+      <span class="tool-arrow">›</span>
+    </a>
+
+    <a href="/dashboard/messaging" class="tool-card">
+      <div class="tool-icon blue">💬</div>
+      <div class="tool-body">
+        <div class="tool-header">
+          <h3>Messaging AI</h3>
+          <span class="badge blue">Unlimited Replies</span>
+        </div>
+        <p>Get smart, flirty replies and first message suggestions for any situation</p>
+        <div class="tool-steps">
+          <span>1. Paste message</span>
+          <span>→</span>
+          <span>2. Set context</span>
+          <span>→</span>
+          <span>3. Get replies</span>
+        </div>
+      </div>
+      <span class="tool-arrow">›</span>
+    </a>
+  </div>
+
+  <!-- Tips -->
+  <div class="card tips-card">
+    <h3>💡 Pro Tips</h3>
+    <ul>
+      <li>Use the <strong>Photo Generator</strong> first — great photos are the #1 factor in getting matches</li>
+      <li>Then improve your <strong>bio</strong> to match the vibe of your new photos</li>
+      <li>Use <strong>Photo Ranking</strong> to choose the perfect order for your existing photos</li>
+      <li>Use the <strong>Messaging AI</strong> whenever you're unsure how to reply</li>
+    </ul>
+  </div>
+</div>
+{% endblock %}

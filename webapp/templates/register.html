@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Create Account — GlowUp AI{% endblock %}
+{% block body %}
+<div class="auth-layout">
+  <div class="auth-logo">
+    <a href="/" class="logo">
+      <div class="logo-icon">✨</div>
+      <span>GlowUp AI</span>
+    </a>
+  </div>
+
+  <div class="auth-card">
+    <div class="auth-header">
+      <h1>Create your account</h1>
+      <p>Start transforming your dating profile today</p>
+    </div>
+
+    {% if error %}
+    <div class="alert alert-error">{{ error }}</div>
+    {% endif %}
+
+    <form method="POST" action="/register" class="auth-form">
+      <div class="form-group">
+        <label>Your name</label>
+        <input type="text" name="name" placeholder="Alex" required />
+      </div>
+      <div class="form-group">
+        <label>Email address</label>
+        <input type="email" name="email" placeholder="you@example.com" required autocomplete="email" />
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" name="password" placeholder="At least 8 characters" required minlength="8" autocomplete="new-password" />
+      </div>
+      <button type="submit" class="btn-primary btn-full">Create free account</button>
+      <p class="form-note">By signing up, you agree to our terms. Your photos are kept private and secure.</p>
+    </form>
+
+    <p class="auth-switch">
+      Already have an account? <a href="/login">Sign in</a>
+    </p>
+  </div>
+</div>
+{% endblock %}

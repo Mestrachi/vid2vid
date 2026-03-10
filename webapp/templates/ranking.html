@@ -1,0 +1,196 @@
+{% extends "dashboard_base.html" %}
+{% block title %}Photo Ranking — GlowUp AI{% endblock %}
+{% block content %}
+<div class="page-content">
+  <div class="page-header">
+    <div class="page-tag yellow">⭐ Photo Ranking</div>
+    <h1>Rank Your Profile Photos</h1>
+    <p>Upload your current dating app photos. AI will rank them and tell you exactly which to use first and which to remove.</p>
+  </div>
+
+  <div class="card">
+    <h2>Upload your photos (2-9)</h2>
+    <div id="drop-zone" class="drop-zone yellow" onclick="document.getElementById('photo-input').click()"
+         ondragover="handleDragOver(event)" ondrop="handleDrop(event)">
+      <div class="drop-icon">📷</div>
+      <p>Click or drag your current profile photos here</p>
+      <p class="hint">Upload the photos you're currently using or considering</p>
+    </div>
+    <input type="file" id="photo-input" multiple accept="image/*" class="hidden" onchange="handleFiles(this.files)" />
+
+    <div id="preview-grid" class="photo-preview-grid"></div>
+    <p id="photo-count" class="photo-count">0 photos uploaded</p>
+
+    <button id="rank-btn" class="btn-primary btn-full" onclick="rankPhotos()">
+      ⭐ Rank my photos
+    </button>
+  </div>
+
+  <div id="loading" class="hidden loading-card">
+    <div class="spinner"></div>
+    <p>AI is ranking your photos...</p>
+  </div>
+
+  <div id="results" class="hidden">
+    <!-- Best first photo -->
+    <div class="card card-yellow">
+      <div class="flex-row gap-sm mb-md">
+        <span class="icon-lg">⭐</span>
+        <h2>Best First Photo</h2>
+        <span class="badge pink">Use this as #1</span>
+      </div>
+      <div id="best-photo-section" class="best-photo-row"></div>
+    </div>
+
+    <!-- Ranked order -->
+    <div class="card">
+      <h2>Recommended photo order</h2>
+      <div id="ranked-grid" class="photo-ranked-grid"></div>
+    </div>
+
+    <!-- Remove -->
+    <div id="remove-section" class="card card-red hidden">
+      <h3>🗑️ Photos to remove</h3>
+      <p id="remove-photos"></p>
+      <p id="remove-reason" class="muted"></p>
+    </div>
+
+    <!-- Missing -->
+    <div id="missing-section" class="card card-blue hidden">
+      <h3>📷 Photo types you're missing</h3>
+      <ul id="missing-list" class="check-list blue"></ul>
+      <p class="hint-text">💡 Use the AI Photo Generator to create these missing shot types</p>
+    </div>
+
+    <!-- Tips -->
+    <div class="card">
+      <h3>Tips from your ranking</h3>
+      <ul id="tips-list" class="check-list green"></ul>
+    </div>
+  </div>
+</div>
+
+<script>
+let photoFiles = [];
+let photoPreviews = [];
+
+function handleDragOver(e) {
+  e.preventDefault();
+  document.getElementById('drop-zone').classList.add('drag-over');
+}
+
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('drop-zone').classList.remove('drag-over');
+  handleFiles(e.dataTransfer.files);
+}
+
+function handleFiles(files) {
+  const newFiles = Array.from(files).slice(0, 9 - photoFiles.length);
+  photoFiles = [...photoFiles, ...newFiles].slice(0, 9);
+  renderPreviews();
+}
+
+function renderPreviews() {
+  const grid = document.getElementById('preview-grid');
+  grid.innerHTML = '';
+  photoPreviews = [];
+
+  photoFiles.forEach((f, i) => {
+    const url = URL.createObjectURL(f);
+    photoPreviews.push(url);
+    const div = document.createElement('div');
+    div.className = 'preview-thumb';
+    div.innerHTML = `
+      <img src="${url}" alt="Photo ${i+1}" />
+      <div class="thumb-num">${i+1}</div>
+      <button class="thumb-remove" onclick="removePhoto(${i})">×</button>
+    `;
+    grid.appendChild(div);
+  });
+
+  document.getElementById('photo-count').textContent = photoFiles.length + ' photos uploaded';
+}
+
+function removePhoto(i) {
+  photoFiles.splice(i, 1);
+  renderPreviews();
+}
+
+async function rankPhotos() {
+  if (photoFiles.length < 2) { alert('Upload at least 2 photos'); return; }
+
+  document.getElementById('loading').classList.remove('hidden');
+  document.getElementById('results').classList.add('hidden');
+  document.getElementById('rank-btn').disabled = true;
+
+  const formData = new FormData();
+  photoFiles.forEach(f => formData.append('photos', f));
+
+  try {
+    const res = await fetch('/api/ranking', { method: 'POST', body: formData });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Ranking failed');
+    showResults(data.result);
+  } catch (e) {
+    alert('Error: ' + e.message);
+  } finally {
+    document.getElementById('loading').classList.add('hidden');
+    document.getElementById('rank-btn').disabled = false;
+  }
+}
+
+function showResults(r) {
+  // Best first photo
+  const bestIdx = r.bestFirstPhoto - 1;
+  const bestSection = document.getElementById('best-photo-section');
+  bestSection.innerHTML = `
+    <div class="best-photo-thumb">
+      ${photoPreviews[bestIdx] ? `<img src="${photoPreviews[bestIdx]}" />` : ''}
+      <div class="best-badge">#1</div>
+    </div>
+    <p>${escHtml(r.bestFirstPhotoReason)}</p>
+  `;
+
+  // Ranked grid
+  const rankedGrid = document.getElementById('ranked-grid');
+  rankedGrid.innerHTML = r.ranking.map((photoNum, rank) => {
+    const idx = photoNum - 1;
+    const shouldRemove = r.photosToRemove && r.photosToRemove.includes(photoNum);
+    return `
+      <div class="ranked-thumb ${shouldRemove ? 'to-remove' : ''} ${rank === 0 ? 'best' : ''}">
+        ${photoPreviews[idx] ? `<img src="${photoPreviews[idx]}" />` : ''}
+        <div class="rank-badge">#${rank+1}</div>
+        ${shouldRemove ? '<div class="remove-x">×</div>' : ''}
+        <p class="thumb-label">Photo ${photoNum}</p>
+        ${shouldRemove ? '<p class="remove-label">Remove</p>' : ''}
+      </div>
+    `;
+  }).join('');
+
+  // Photos to remove
+  if (r.photosToRemove && r.photosToRemove.length > 0) {
+    document.getElementById('remove-section').classList.remove('hidden');
+    document.getElementById('remove-photos').textContent = r.photosToRemove.map(n => 'Photo ' + n).join(', ');
+    document.getElementById('remove-reason').textContent = r.photosToRemoveReason;
+  }
+
+  // Missing
+  if (r.missingShotTypes && r.missingShotTypes.length > 0) {
+    document.getElementById('missing-section').classList.remove('hidden');
+    document.getElementById('missing-list').innerHTML = r.missingShotTypes.map(t =>
+      `<li>+ ${escHtml(t)}</li>`).join('');
+  }
+
+  // Tips
+  document.getElementById('tips-list').innerHTML = (r.tips || []).map(t =>
+    `<li>✅ ${escHtml(t)}</li>`).join('');
+
+  document.getElementById('results').classList.remove('hidden');
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+</script>
+{% endblock %}
